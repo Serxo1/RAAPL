@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Localização GPS</title>
+    
+    <!-- Bootstrap CSS link -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+
+    <!-- Google Maps JavaScript -->
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAsPUeFxVnRA2d6zz5Ava5ZCSUtq8KGKhA"></script>
+    <script>
+        function initMap() {
+            var location = {lat: parseFloat(document.getElementById('lat').textContent), lng: parseFloat(document.getElementById('lng').textContent)};
+            var map = new google.maps.Map(document.getElementById('map'), {
+                zoom: 15,
+                center: location
+            });
+            var marker = new google.maps.Marker({
+                position: location,
+                map: map
+            });
+        }
+    </script>
+</head>
+<body onload="initMap()">
+
+<!-- Barra de Navegação -->
+<nav class="navbar navbar-expand-lg navbar-light bg-light">
+    <a class="navbar-brand" href="#">MeuSite</a>
+    <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarNav">
+        <ul class="navbar-nav">
+            <li class="nav-item active">
+                <a class="nav-link" href="#">Início</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="#">Sobre</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="#">Contato</a>
+            </li>
+        </ul>
+    </div>
+</nav>
+
+<!-- Conteúdo do corpo -->
+<div class="container mt-5">
+    <h1>Localização GPS</h1>
+    <div id="lat" style="display:none">{{latitude}}</div>
+    <div id="lng" style="display:none">{{longitude}}</div>
+    <div id="map" style="height: 500px; width: 100%; margin-top: 20px;"></div>
+    <div id="joystickContainer" style="position: relative; width: 200px; height: 200px; background-color: #555555; margin: 20px;">
+    <div id="joystickHandle" style="position: absolute; top: 50%; left: 50%; width: 50px; height: 50px; background-color: #999999; border-radius: 50%; transform: translate(-50%, -50%);"></div>
+</div>
+</div>
+
+
+<h1>PiCam Live Streaming</h1>
+        
+        <div class="img-container">
+            <img src="{{ url_for('video_feed') }}" alt="Video Feed">
+        </div>
+        
+
+
+<!-- Bootstrap JS, Popper.js e jQuery -->
+<script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.3/dist/umd/popper.min.js"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+<script src="/home/raapl/Downloads/python-gps-examples/js"></script>
+<script>
+document.getElementById("joystickContainer").addEventListener("click", function(event) {
+    var rect = event.target.getBoundingClientRect();
+    var x = event.clientX - rect.left; 
+    var y = event.clientY - rect.top; 
+
+    var centerX = rect.width / 2;
+    var centerY = rect.height / 2;
+
+    if (y < centerY) {
+        sendCommandToPython("move_forward");
+    } else if (y > centerY) {
+        sendCommandToPython("move_backward");
+    }
+    // Adicione condições para esquerda e direita se necessário...
+
+    function sendCommandToPython(command) {
+        fetch("/command", {
+            method: "POST",
+            body: JSON.stringify({ "command": command }),
+            headers: {
+                "Content-Type": "application/json"
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            console.log(data.message);
+        });
+    }
+});
+</script>
+
+</body>
+</html>
