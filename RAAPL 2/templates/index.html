@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Robot Controller</title>
+    <style>
+        #map {
+            height: 400px;
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+    <h3>My Robot Controller</h3>
+    <div id="map"></div>
+    <button onclick="startNavigation()">Start Navigation</button>
+    <button onclick="cancelNavigation()">Cancel Navigation</button>
+    <button onclick="clearMarkers()">Clear Markers</button>
+
+    <script>
+        let map;
+        let waypoints = [];
+        let pathLine;  // Referência global para a polyline
+
+        function initMap() {
+            console.log('Initializing map...');
+            fetch('/current_location')
+            .then(response => response.json())
+            .then(data => {
+                console.log('Current location:', data);
+                var currentLocation = {lat: data.latitude, lng: data.longitude};
+                map = new google.maps.Map(document.getElementById('map'), {
+                    center: currentLocation,
+                    zoom: 15
+                });
+
+                // Adicionar um marcador especial para a localização do robô com o SVG
+                const robotIcon = {
+                    path: "M320 0c17.7 0 32 14.3 32 32V96H472c39.8 0 72 32.2 72 72V440c0 39.8-32.2 72-72 72H168c-39.8 0-72-32.2-72-72V168c0-39.8 32.2-72 72-72H288V32c0-17.7 14.3-32 32-32zM208 384c-8.8 0-16 7.2-16 16s7.2 16 16 16h32c8.8 0 16-7.2 16-16s-7.2-16-16-16H208zm96 0c-8.8 0-16 7.2-16 16s7.2 16 16 16h32c8.8 0 16-7.2 16-16s-7.2-16-16-16H304zm96 0c-8.8 0-16 7.2-16 16s7.2 16 16 16h32c8.8 0 16-7.2 16-16s-7.2-16-16-16H400zM264 256a40 40 0 1 0 -80 0 40 40 0 1 0 80 0zm152 40a40 40 0 1 0 0-80 40 40 0 1 0 0 80zM48 224H64V416H48c-26.5 0-48-21.5-48-48V272c0-26.5 21.5-48 48-48zm544 0c26.5 0 48 21.5 48 48v96c0 26.5-21.5 48-48 48H576V224h16z",
+                    fillColor: '#00FF00',
+                    fillOpacity: 1,
+                    strokeWeight: 0,
+                    scale: 0.05,
+                    anchor: new google.maps.Point(320, 320)
+                };
+
+                new google.maps.Marker({
+                    position: currentLocation,
+                    map: map,
+                    icon: robotIcon,
+                    title: "Robot's Current Location"
+                });
+
+                pathLine = new google.maps.Polyline({
+                    path: [],
+                    geodesic: true,
+                    strokeColor: '#FF0000',
+                    strokeOpacity: 1.0,
+                    strokeWeight: 2
+                });
+                pathLine.setMap(map);
+
+                map.addListener('click', function(e) {
+                    placeMarker(e.latLng, map);
+                    addWaypoint(e.latLng);
+                    updatePath(pathLine, e.latLng);
+                });
+            })
+            .catch(error => console.error('Failed to fetch current location:', error));
+        }
+
+        let markers = [];  // Array para armazenar os marcadores
+
+        function placeMarker(latLng, map) {
+            console.log('Placing marker at:', latLng);
+            const marker = new google.maps.Marker({
+                position: latLng,
+                map: map
+            });
+            markers.push(marker);  // Adiciona o marcador ao array
+        }
+
+        function clearMarkers() {
+            console.log('Clearing markers and paths...');
+            markers.forEach(marker => marker.setMap(null));
+            markers = [];
+
+            if (pathLine) {
+                pathLine.setMap(null);
+                pathLine = new google.maps.Polyline({
+                    path: [],
+                    geodesic: true,
+                    strokeColor: '#FF0000',
+                    strokeOpacity: 1.0,
+                    strokeWeight: 2
+                });
+                pathLine.setMap(map);
+            }
+
+            console.log('Markers and paths cleared');
+        }
+
+        function addWaypoint(latLng) {
+            console.log('Adding waypoint:', latLng);
+            waypoints.push({
+                latitude: latLng.lat(),
+                longitude: latLng.lng()
+            });
+        }
+
+        function startNavigation() {
+            console.log('Starting navigation with waypoints:', waypoints);
+            waypoints.forEach(waypoint => {
+                fetch('/add_waypoint', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(waypoint)
+                })
+                .then(response => response.json())
+                .then(data => console.log('Waypoint added:', data))
+                .catch(error => console.error('Error adding waypoint:', error));
+            });
+
+            fetch('/start_navigation', {
+                method: 'POST'
+            })
+            .then(response => response.json())
+            .then(data => console.log('Navigation started:', data))
+            .catch(error => console.error('Error starting navigation:', error));
+        }
+
+        function updatePath(pathLine, latLng) {
+            console.log('Updating path with:', latLng);
+            const path = pathLine.getPath();
+            path.push(latLng);
+        }
+
+        function cancelNavigation() {
+            console.log('Cancelling navigation...');
+            fetch('/cancel_navigation', {
+                method: 'POST'
+            })
+            .then(response => response.json())
+            .then(data => console.log('Navigation cancelled:', data))
+            .catch(error => console.error('Error cancelling navigation:', error));
+        }
+    </script>
+    <script async defer
+        <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDBSSbGwWNeHaTHxZ_KFMhpXvnLlWNZj28&callback=initMap&v=weekly"></script>
+    </script>
+</body>
+</html>
